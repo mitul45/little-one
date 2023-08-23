@@ -1,23 +1,5 @@
-# Based on: https://www.smarthomebeginner.com/docker-media-server-2022/
+# Roughly Based on: https://www.smarthomebeginner.com/docker-media-server-2022/
 version: "3.9"
-
-########################### NETWORKS
-# You may customize the network subnet (192.168.89.0/24) below as you please.
-# Docker Compose version 3.5 or higher required to define networks this way.
-
-# networks:
-#   default:
-#     driver: bridge
-#   npm_proxy:
-#     name: npm_proxy
-#     driver: bridge
-#     ipam:
-#       config:
-#         - subnet: 192.168.89.0/24
-
-########################### EXTENSION FIELDS
-# Helps eliminate repetition of sections
-# More Info on how to use this: https://github.com/htpcBeginner/docker-traefik/pull/228
 
 # Common environment values
 x-environment: &default-tz-puid-pgid
@@ -25,59 +7,29 @@ x-environment: &default-tz-puid-pgid
   PUID: $PUID
   PGID: $PGID
 
-# Keys common to some of the core services that we always to automatically restart on failure
-x-common-keys-core: &common-keys-core
-  # networks:
-  #   - npm_proxy
-  # security_opt:
-  #   - no-new-privileges:true
-  restart: always
- 
-# Keys common to some of the dependent services/apps
-x-common-keys-apps: &common-keys-apps
-  # networks:
-  #   - npm_proxy
-  # security_opt:
-  #   - no-new-privileges:true
-  restart: unless-stopped
- 
-# Keys common to some of the services in media-services.txt
-x-common-keys-media: &common-keys-media
-  # networks:
-  #   - npm_proxy
-  # security_opt:
-  #   - no-new-privileges:true
-  restart: "no"
-
-########################### SERVICES
 services:
 
   # Portainer - WebUI for Containers
   portainer:
-    <<: *common-keys-core # See EXTENSION FIELDS at the top
-    container_name: portainer
     image: portainer/portainer-ce:latest
+    container_name: portainer
+    environment:
+      <<: *default-tz-puid-pgid
     command: -H unix:///var/run/docker.sock # Use Docker Socket Proxy and comment this line out, for improved security.
-    # command: -H tcp://socket-proxy:2375 # Use this instead, if you have Socket Proxy enabled.
-    # networks:
-    #   - npm_proxy
     ports: # Comment out if using Nginx Proxy Manager to access portainer WebUI.
       - 9000:9000
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro # Use Docker Socket Proxy and comment this line out, for improved security.
       - $DOCKERDIR/appdata/portainer/data:/data # Change to local directory if you want to save/transfer config locally.
-    environment:
-      - TZ=$TZ
+
 
   # Downloads files and puts them in $DATADIR/downloads
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
     container_name: qbittorrent
     environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ='Europe/Amsterdam'
-      - WEBUI_PORT=8080
+      <<: *default-tz-puid-pgid
+      WEBUI_PORT: 8080
     volumes:
       - $DOCKERDIR/appdata/config:/config
       # - $DATADIR/downloads:/downloads
@@ -89,15 +41,13 @@ services:
     restart: unless-stopped
 
   # Sonarr - TV Shows management
-  # Tells qbittorrent what to download and keeps scanning $DATADIR/downloads, 
-  # once it is available, moves it to $DATADIR/media
+  # Tells qbittorrent what to download and keeps scanning $DATADIR/downloads,
+  # once it is available, moves it to $DATADIR/media/tvseries
   sonarr:
-    <<: *common-keys-media # See EXTENSION FIELDS at the top
     image: lscr.io/linuxserver/sonarr
     container_name: sonarr
-    # networks:
-    #   npm_proxy:
-    #     ipv4_address: 192.168.89.167
+    environment:
+      <<: *default-tz-puid-pgid
     ports:
       - "8989:8989"
     volumes:
@@ -105,18 +55,15 @@ services:
       - $DATADIR/downloads:/data/downloads
       - $DATADIR/media:/data/media
       - "/etc/localtime:/etc/localtime:ro"
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ='Europe/Amsterdam'
 
+  # Sonarr - Movies
+  # Tells qbittorrent what to download and keeps scanning $DATADIR/downloads,
+  # once it is available, moves it to $DATADIR/media/moveis
   radarr:
-    <<: *common-keys-media # See EXTENSION FIELDS at the top
     image: lscr.io/linuxserver/radarr
     container_name: radarr
-    # networks:
-    #   npm_proxy:
-    #     ipv4_address: 192.168.89.167
+    environment:
+      <<: *default-tz-puid-pgid
     ports:
       - "7878:7878"
     volumes:
@@ -124,54 +71,28 @@ services:
       - $DATADIR/downloads:/data/downloads
       - $DATADIR/media:/data/media
       - "/etc/localtime:/etc/localtime:ro"
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ='Europe/Amsterdam'
 
-  # radarr:
-  #   <<: *common-keys-media # See EXTENSION FIELDS at the top
-  #   image: lscr.io/linuxserver/radarr:latest
-  #   container_name: radarr
-  #   # networks:
-  #   #   - npm_proxy
-  #   environment:
-  #     - PUID=1000
-  #     - PGID=1000
-  #     - TZ='Europe/Amsterdam'
-  #   volumes:
-  #     - $DOCKERDIR/appdata/radarr:/config
-  #     - $DATADIR/downloads:/data/downloads
-  #     - $DATADIR/media:/data/media
-  #   ports:
-  #     - "7878:7878"
-  #   restart: unless-stopped
-
-  # Helps sonarr to find torrents and pass it to qbittorrent via 
+  # Helps sonarr to find torrents and pass it to qbittorrent via
   # $DOCKERDIR/appdata/config folder
   prowlarr:
     image: lscr.io/linuxserver/prowlarr:latest
     container_name: prowlarr
+    environment:
+      <<: *default-tz-puid-pgid
     volumes:
       - $DOCKERDIR/appdata/config:/config
     ports:
       - 9696:9696
     restart: unless-stopped
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ='Europe/Amsterdam'
 
   # Reads data placed in $DATADIR/media and allows us to watch it on TV
   plex:
     image: lscr.io/linuxserver/plex:latest
     container_name: plex
-    network_mode: host
     environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ='Europe/Amsterdam'
-      - VERSION='docker'
+      <<: *default-tz-puid-pgid
+      VERSION: 'docker'
+    network_mode: host
     volumes:
       - $DOCKERDIR/appdata/config:/config
       - $DATADIR/media/tvseries:/tv
