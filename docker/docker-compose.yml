@@ -29,13 +29,13 @@ services:
     container_name: qbittorrent
     environment:
       <<: *default-tz-puid-pgid
-      WEBUI_PORT: 8080
+      WEBUI_PORT: 8081
     volumes:
       - $DOCKERDIR/appdata/config:/config
       # - $DATADIR/downloads:/downloads
       - $DATADIR/downloads:/data/downloads
     ports:
-      - 8080:8080
+      - 8081:8081
       - 6881:6881
       - 6881:6881/udp
     restart: unless-stopped
@@ -97,4 +97,35 @@ services:
       - $DOCKERDIR/appdata/config:/config
       - $DATADIR/media/tvseries:/tv
       - $DATADIR/media/movies:/movies
+    restart: unless-stopped
+
+  readarr:
+    image: lscr.io/linuxserver/readarr:develop
+    container_name: readarr
+    environment:
+      <<: *default-tz-puid-pgid
+    volumes:
+      - $DOCKERDIR/appdata/readarr:/config
+      - $DATADIR/downloads:/data/downloads
+      - $DATADIR/media/books:/books
+    ports:
+      - 8787:8787
+    restart: unless-stopped
+
+  syncthing:
+    image: syncthing/syncthing
+    container_name: syncthing
+    hostname: little-one
+    environment:
+      <<: *default-tz-puid-pgid
+    volumes:
+      - $DOCKERDIR/appdata/syncthing:/var/syncthing/config
+      - /home/mitul/Sync:/var/syncthing/Sync
+      - /home/mitul/Dropbox:/var/syncthing/Dropbox
+      - /home/mitul/git/obsidian:/var/syncthing/obsidian
+    ports:
+      - 8384:8384
+      - 22000:22000/tcp
+      - 22000:22000/udp
+      - 21027:21027/udp
     restart: unless-stopped

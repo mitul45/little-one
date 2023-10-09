@@ -9,8 +9,8 @@ sudo docker compose -f ~/git/little-one/docker/docker-compose.yml up -d
 sudo docker compose -f ~/git/little-one/docker/docker-compose.yml down
 
 # Logs for a particular container
-sudo docker compose -f ~/git/little-one/docker/docker-compose.yaml logs [container_name]
+sudo docker compose -f ~/git/little-one/docker/docker-compose.yml logs [container_name]
 
 # Tail logs for a particular container
-sudo docker compose -f ~/git/little-one/docker/docker-compose.yaml logs [container_name] -f
+sudo docker compose -f ~/git/little-one/docker/docker-compose.yml logs [container_name] -f
 ```
